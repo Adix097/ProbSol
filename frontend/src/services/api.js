@@ -2,7 +2,7 @@
 // API layer. Flip USE_MOCK_DATA to false to talk to the real backend.
 // Every page imports from here only, so nothing else needs to change.
 // ─────────────────────────────────────────────────────────────
-export const USE_MOCK_DATA = true;
+export const USE_MOCK_DATA = false;
 const BASE_URL = import.meta.env.VITE_API_URL || ''; // '' = same origin (Vite proxy)
 
 export const GOALS = [
