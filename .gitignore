@@ -27,6 +27,8 @@ coverage/
 .parcel-cache/
 .eslintcache
 .vite/
+__pycache__
+.venv
 
 # OS generated files
 .DS_Store
