@@ -1,5 +1,4 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Compass } from 'lucide-react';
 import { useAuth } from '../services/auth';
 
 export default function Navbar() {
@@ -12,7 +11,7 @@ export default function Navbar() {
     <header className="border-b border-ink/10 bg-white">
       <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3">
         <Link to="/" className="mr-4 flex items-center gap-2 text-lg font-bold tracking-tight">
-          <Compass className="h-5 w-5 text-brand" aria-hidden /> ProbSol
+          <img src="/favicon.svg" alt="" className="h-5 w-5" aria-hidden="true" /> ProbSol
         </Link>
         <NavLink to="/" end className={link}>Home</NavLink>
         {user && (
