@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ChevronDown, Flag, FolderGit2 } from 'lucide-react';
-import { getProgress, getRoadmap, goalLabel, updateNodeStatus } from '../services/api';
+import { AlertCircle, ChevronDown, Flag, FolderGit2, Trash2 } from 'lucide-react';
+import { getProgress, getRoadmap, goalLabel, removeRoadmap, updateNodeStatus } from '../services/api';
 import StatusControl from '../components/StatusControl';
 import ResourceCard from '../components/ResourceCard';
 
@@ -15,6 +15,7 @@ export default function RoadmapPage() {
   const [error, setError] = useState('');
   const [collapsed, setCollapsed] = useState({});
   const [saving, setSaving] = useState('');
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +43,18 @@ export default function RoadmapPage() {
     finally { setSaving(''); }
   }, [id]);
 
+  async function handleRemove() {
+    if (!window.confirm('Remove this roadmap from your roadmaps?')) return;
+    setRemoving(true);
+    try {
+      await removeRoadmap(id);
+      navigate('/dashboard', { replace: true });
+    } catch (e) {
+      setError(e.message || 'Could not remove this roadmap.');
+      setRemoving(false);
+    }
+  }
+
   function continueLearning() {
     const nextId = progress?.summary.next_node_id;
     if (!nextId) return;
@@ -67,7 +80,15 @@ export default function RoadmapPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 pt-10">
       <header>
-        <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-sm font-medium text-brand-dark">{goalLabel(rm.goal)}</span>
+        <div className="flex items-start justify-between gap-4">
+          <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-sm font-medium text-brand-dark">{goalLabel(rm.goal)}</span>
+          <button type="button" onClick={handleRemove} disabled={removing}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Remove roadmap" aria-label="Remove roadmap">
+            <Trash2 className="h-4 w-4" aria-hidden />
+            {removing ? 'Removing…' : 'Remove'}
+          </button>
+        </div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{rm.topic}</h1>
         <p className="mt-2 text-lg text-ink/70">{rm.summary}</p>
       </header>

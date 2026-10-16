@@ -24,16 +24,6 @@ export function toView(row) {
   };
 }
 
-async function checkDailyLimit(userId) {
-  const { rows } = await query(
-    `SELECT count(*)::int AS n FROM generation_log WHERE user_id = $1 AND created_at > now() - interval '24 hours'`,
-    [userId],
-  );
-  if (rows[0].n >= config.dailyNewTopicLimit) {
-    throw new HttpError(429, `You have reached today's limit of ${config.dailyNewTopicLimit} new topics. Please try again tomorrow.`);
-  }
-}
-
 async function startGeneration(row, userId) {
   const log = await query(
     'INSERT INTO generation_log (user_id, roadmap_id) VALUES ($1, $2) RETURNING id',
@@ -62,7 +52,6 @@ export async function findOrStartRoadmap({ user, topic, goal }) {
   let startNew = false;
 
   if (!row || row.status === 'failed') {
-    await checkDailyLimit(user.id);
     if (!row) {
       const ins = await query(
         `INSERT INTO roadmaps (id, normalized_topic, topic, goal, status)

@@ -2,9 +2,19 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { computeSummary } from '../services/progressService.js';
+import { HttpError } from '../utils.js';
 
 const router = Router();
 router.use(requireAuth);
+
+router.delete('/roadmaps/:id', async (req, res) => {
+  const { rowCount } = await query(
+    'DELETE FROM user_roadmaps WHERE user_id = $1 AND roadmap_id = $2',
+    [req.user.id, req.params.id],
+  );
+  if (!rowCount) throw new HttpError(404, 'Roadmap not found in your roadmaps.');
+  res.status(204).end();
+});
 
 router.get('/roadmaps', async (req, res) => {
   const [roadmaps, progress] = await Promise.all([

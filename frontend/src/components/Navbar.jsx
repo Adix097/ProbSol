@@ -17,8 +17,6 @@ export default function Navbar() {
         {user && (
           <>
             <NavLink to="/dashboard" end className={link}>Dashboard</NavLink>
-            {/* Same page as the dashboard; the hash jumps to the roadmap list */}
-            <Link to="/dashboard#roadmaps" className="px-3 py-1.5 text-sm font-medium text-ink/70 hover:text-ink">My Roadmaps</Link>
           </>
         )}
         <div className="ml-auto flex items-center gap-2">

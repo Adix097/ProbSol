@@ -33,7 +33,7 @@ Errors are always `{ "message": "..." }` with a proper status (400, 401, 404, 40
 3. Miss: row created as `queued`, backend calls `POST {AI_URL}/generate`, status becomes `generating`.
 4. The AI service calls `/internal/.../complete` (or `/fail`). The backend assigns ids (`st_`, `nd_`, `res_`) and stores the result.
 5. A watcher marks anything stuck for `GENERATION_TIMEOUT_MIN` minutes as `failed`, so nobody waits forever.
-6. Each user can start `DAILY_NEW_TOPIC_LIMIT` new generations per 24 hours (cache hits are free).
+6. Users can start unlimited new generations; cache hits are still reused.
 
 ## Layout
 
