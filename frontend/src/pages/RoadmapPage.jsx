@@ -160,17 +160,6 @@ export default function RoadmapPage() {
 
       {error && <p role="alert" className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
-      <nav aria-label="Roadmap stages" className="mt-8 overflow-x-auto pb-1">
-        <div className="flex min-w-max gap-2">
-          {stages.map((stage, index) => (
-            <a key={stage.id} href={`#stage-${stage.id}`} className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-2 text-sm font-medium text-ink/70 transition hover:border-brand/30 hover:bg-white hover:text-brand-dark">
-              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ${STAGE_THEMES[index % STAGE_THEMES.length].dot}`}>{index + 1}</span>
-              {stage.title}
-            </a>
-          ))}
-        </div>
-      </nav>
-
       <div className="mt-8 space-y-6">
         {stages.map((stage, stageIndex) => {
           const sp = summary?.stages?.[stage.id];
