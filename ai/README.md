@@ -1,67 +1,103 @@
-# ProbSol AI integration patch
+# AI service
 
-This patch replaces the fake roadmap generator in `ai/main.py` with a real pipeline:
+The AI service is a FastAPI application that prepares roadmap content for the backend. It does not talk to users directly. The backend sends a generation request, and this service calls the backend later with either a completed roadmap or a failure.
 
-1. TinyFish Search retrieves candidate learning resources.
-2. TinyFish Fetch enriches a few results with page text.
-3. Gemini creates a staged roadmap using those results.
-4. The service filters out any resource URL that did not come from TinyFish.
-5. The service posts the result to the existing backend callback contract (`/complete` or `/fail`).
+## What happens during generation
 
-## Apply to your repository
+1. TinyFish Search looks for several kinds of material: official references, courses and exercises, practice problems, debugging material, and portfolio or deployment projects.
+2. Results are deduplicated and scored. Known educational and official domains receive a higher score.
+3. TinyFish Fetch adds a short page excerpt to the best candidates when it can.
+4. Gemini is asked to build a prerequisite-first roadmap using the topic, goal, learner profile, and retrieved results.
+5. Grok is used only when Gemini fails and its key is configured.
+6. The service removes malformed output, invented URLs, invalid resource types, and excessive resource reuse.
+7. The finished result is posted to the backend's internal `complete` callback.
 
-Copy these files into the existing `ai/` directory in `Adix097/ProbSol`, replacing `main.py`, `requirements.txt`, and `.env.example`. Keep the existing backend and frontend contracts unchanged.
+The model creates the learning structure, but it cannot invent resource URLs. Every attached resource must have come from the search results.
 
-## Local run (PowerShell)
+## Local setup
 
-```powershell
+```bash
 cd ai
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-Copy-Item .env.example .env
-# Edit .env and set all three secrets before continuing
+cp .env.example .env
+```
+
+Set these values in `.env`:
+
+```dotenv
+INTERNAL_KEY=the-same-value-used-by-the-backend
+GEMINI_API_KEY=your-gemini-key
+GEMINI_MODEL=gemini-flash-latest
+TINYFISH_API_KEY=your-tinyfish-key
+```
+
+`XAI_API_KEY` and `XAI_MODEL` are optional fallback settings. The service can use Gemini as its primary provider without them.
+
+Start the service from the `ai/` directory:
+
+```bash
+source .venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
 
-Open `http://127.0.0.1:8000/health`. The response should show `ok: true` and both providers configured.
+Check its status:
 
-## Deploy the AI service
+```bash
+curl http://localhost:8000/health
+```
 
-Deploy the `ai/` directory as a long-running Python web service on Render or Railway (rather than a short-lived serverless function, because this repository uses FastAPI BackgroundTasks).
+The response reports whether the Gemini, Grok, and TinyFish credentials are configured. It does not expose the credentials themselves.
 
-- Root directory: `ai` (if the platform supports a monorepo root directory)
-- Build command: `pip install -r requirements.txt`
-- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Environment variables: `INTERNAL_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `TINYFISH_API_KEY`
+## Request contract
 
-Generate one long random `INTERNAL_KEY`; use the exact same value in both AI service and backend environment variables.
+The backend calls `POST /generate` with an internal header and a callback URL:
 
-## Backend environment
+```json
+{
+	"roadmap_id": "rm_example",
+	"topic": "Python",
+	"goal": "job_ready",
+	"learner_profile": {
+		"experience": "some_experience",
+		"weekly_hours": 6,
+		"target": "Build a portfolio API"
+	},
+	"callback_url": "http://localhost:4000/internal/roadmaps/rm_example"
+}
+```
 
-In the existing backend deployment, set/update:
+The endpoint returns `202` after accepting the job. The actual work runs in a FastAPI background task.
 
-- `AI_URL=https://YOUR-AI-SERVICE-DOMAIN` (no trailing slash)
-- `INTERNAL_KEY=the-same-long-random-secret`
-- `BACKEND_URL=https://YOUR-BACKEND-DOMAIN` (no trailing slash)
-- `CORS_ORIGIN=https://probsol-delta.vercel.app`
+The service later sends one of these requests to the callback URL:
 
-Keep your existing `DATABASE_URL`, `JWT_SECRET`, and other backend variables unchanged. Redeploy/restart the backend after changing environment variables.
+- `POST /complete` with the roadmap JSON.
+- `POST /fail` with a short error message.
 
-## Frontend environment
+Both callback requests include `X-Internal-Key`.
 
-In the Vercel project serving `probsol-delta.vercel.app`, set:
+## Roadmap output
 
-- `VITE_API_URL=https://YOUR-BACKEND-DOMAIN` (no trailing slash)
+Each roadmap contains three to five stages with topic and project nodes. Topic nodes can include up to three resources. Project nodes can include:
 
-Redeploy the frontend after changing it. Do not put Gemini or TinyFish API keys in frontend environment variables or React source code.
+- A deliverable
+- Requirements
+- Milestones
+- Acceptance criteria
+- Optional stretch goals
 
-## Test end-to-end
+The service limits stages to five nodes per stage and stages to five total. The backend performs a second schema validation before storing the result.
 
-1. `GET https://YOUR-AI-SERVICE-DOMAIN/health` should return `ok: true` and both providers configured.
-2. Sign in to ProbSol.
-3. Enter a topic and select Beginner, Intermediate, or Job ready.
-4. Generate a roadmap and wait for the existing generating page to poll until the backend receives the callback.
-5. Confirm resources open and are relevant. URLs are restricted to TinyFish search results; if no usable source is found for a node, the node is marked as having limited resources.
+## Deployment
 
-The existing app architecture has an async callback workflow. Do not replace it with a new Express server or change the callback JSON schema.
+Run this as a long-lived web service because the backend callback happens after the initial request:
+
+```bash
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port "$PORT"
+```
+
+For a monorepo deployment, set the service root to `ai/`. Configure `INTERNAL_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, and `TINYFISH_API_KEY` in the deployment environment. Never place these values in the frontend.
+
+The deployed backend must use the same `INTERNAL_KEY`, and its `AI_URL` must point to this service without a trailing slash.

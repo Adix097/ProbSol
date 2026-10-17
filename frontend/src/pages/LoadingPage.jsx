@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Compass, Loader2, Sparkles } from 'lucide-react';
 import { createRoadmap, getRoadmap, roadmapPath } from '../services/api';
 
 const MESSAGES = [
@@ -72,11 +72,17 @@ export default function LoadingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-24 text-center" role="status" aria-live="polite">
-      <Loader2 className="mx-auto h-10 w-10 animate-spin text-brand" aria-hidden />
-      <h1 className="mt-6 text-2xl font-bold">Building your roadmap{rm?.topic ? `: ${rm.topic}` : ''}</h1>
-      <p className="mt-3 text-ink/70">{MESSAGES[msg]}</p>
-      <p className="mt-1 text-sm text-ink/50">{rm?.status === 'generating' ? 'Generating' : 'Queued'}</p>
+    <div className="mx-auto max-w-2xl px-4 py-16 sm:py-24" role="status" aria-live="polite">
+      <div className="surface-glass relative overflow-hidden rounded-[2rem] p-8 text-center sm:p-12">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-200/60 blur-2xl" />
+        <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-soft text-brand shadow-inner"><Compass className="h-10 w-10 animate-float-gently" aria-hidden /></div>
+        <div className="mx-auto mt-8 flex max-w-xs items-center justify-between"><span className="h-2 w-2 rounded-full bg-brand" /><span className="h-2 w-2 rounded-full bg-emerald-300" /><span className="h-2 w-2 rounded-full bg-amber-300" /><span className="h-2 w-2 rounded-full bg-fuchsia-300" /></div>
+        <h1 className="mt-6 text-2xl font-bold sm:text-3xl">Building your roadmap</h1>
+        <p className="mt-2 break-words text-lg text-brand-dark">{rm?.topic || 'Your personalized learning path'}</p>
+        <p className="mt-4 text-ink/70">{MESSAGES[msg]}</p>
+        <div className="mx-auto mt-7 flex max-w-sm items-center gap-3 rounded-full bg-brand-soft/60 px-4 py-3 text-left text-sm text-brand-dark"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /><span>{rm?.status === 'generating' ? 'Generating stages and resources' : 'Queued for generation'}</span><Sparkles className="ml-auto h-4 w-4 shrink-0" aria-hidden /></div>
+        <div className="mt-6 flex justify-center gap-5 text-xs text-ink/50"><span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-brand" /> Curated topics</span><span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-brand" /> Hands-on projects</span></div>
+      </div>
     </div>
   );
 }

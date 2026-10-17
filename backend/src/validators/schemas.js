@@ -20,6 +20,11 @@ export const loginSchema = z.object({
 export const createRoadmapSchema = z.object({
   topic: z.string().trim().min(2, 'Topic must be at least 2 characters.').max(100, 'Topic must be at most 100 characters.').transform((t) => t.replace(/\s+/g, ' ')),
   goal: z.enum(GOALS, { error: 'Goal must be beginner, intermediate or job_ready.' }),
+  learner_profile: z.object({
+    experience: z.enum(['beginner', 'some_experience', 'advanced']).default('beginner'),
+    weekly_hours: z.number().int().min(1).max(40).default(5),
+    target: z.string().trim().max(160).default(''),
+  }).default({}),
 });
 
 export const progressUpdateSchema = z.object({
@@ -41,6 +46,13 @@ const nodeSchema = z.object({
   description: z.string().trim().default(''),
   limited_resources: z.boolean().default(false),
   resources: z.array(resourceSchema).default([]),
+  project: z.object({
+    deliverable: z.string().trim().default(''),
+    requirements: z.array(z.string().trim()).default([]),
+    milestones: z.array(z.string().trim()).default([]),
+    acceptance_criteria: z.array(z.string().trim()).default([]),
+    stretch_goals: z.array(z.string().trim()).default([]),
+  }).nullable().optional(),
 });
 
 const stageSchema = z.object({

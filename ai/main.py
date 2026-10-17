@@ -17,6 +17,12 @@ load_dotenv()
 
 INTERNAL_KEY = os.getenv("INTERNAL_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+TRUSTED_FREE_DOMAINS = {
+    "developer.mozilla.org", "docs.python.org", "docs.djangoproject.com",
+    "freecodecamp.org", "ocw.mit.edu", "cs50.harvard.edu", "exercism.org",
+    "theodinproject.com", "fullstackopen.com", "khanacademy.org",
+    "github.com", "gitlab.com", "w3.org", "postgresql.org",
+}
 XAI_API_KEY = os.getenv("XAI_API_KEY", "")
 TINYFISH_API_KEY = os.getenv("TINYFISH_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")

@@ -14,6 +14,5 @@ export const config = {
   aiUrl: process.env.AI_URL || 'http://localhost:8000',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:4000',
   corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map((s) => s.trim()),
-  dailyNewTopicLimit: Number(process.env.DAILY_NEW_TOPIC_LIMIT || 3),
   generationTimeoutMin: Number(process.env.GENERATION_TIMEOUT_MIN || 5),
 };

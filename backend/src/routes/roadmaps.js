@@ -9,8 +9,8 @@ router.use(requireAuth);
 
 // Ready (cache hit) -> full roadmap. Otherwise -> { id, status }.
 router.post('/', async (req, res) => {
-  const { topic, goal } = createRoadmapSchema.parse(req.body);
-  const row = await findOrStartRoadmap({ user: req.user, topic, goal });
+  const { topic, goal, learner_profile: learnerProfile } = createRoadmapSchema.parse(req.body);
+  const row = await findOrStartRoadmap({ user: req.user, topic, goal, learnerProfile });
   if (row.status === 'ready') return res.json(toView(row));
   res.status(202).json({ id: row.id, status: row.status });
 });

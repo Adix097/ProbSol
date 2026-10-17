@@ -9,6 +9,14 @@ export class HttpError extends Error {
 
 export const normalizeTopic = (t) => t.trim().toLowerCase().replace(/\s+/g, ' ');
 
+export const normalizeLearnerProfile = (profile = {}) => ({
+  experience: profile.experience || 'unknown',
+  weekly_hours: Number(profile.weekly_hours) || 0,
+  target: String(profile.target || '').trim().replace(/\s+/g, ' ').slice(0, 160),
+});
+
+export const learnerProfileKey = (profile) => JSON.stringify(normalizeLearnerProfile(profile));
+
 export const newRoadmapId = () => `rm_${crypto.randomBytes(5).toString('hex')}`;
 
 export const safeEqual = (a, b) => {

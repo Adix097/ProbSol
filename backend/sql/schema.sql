@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS roadmaps (
   normalized_topic TEXT NOT NULL,
   topic            TEXT NOT NULL,
   goal             TEXT NOT NULL CHECK (goal IN ('beginner','intermediate','job_ready')),
+  profile_key      TEXT NOT NULL DEFAULT '{}',
+  learner_profile  JSONB NOT NULL DEFAULT '{}'::jsonb,
   status           TEXT NOT NULL CHECK (status IN ('queued','generating','ready','failed')),
   error            TEXT NOT NULL DEFAULT '',
   content          JSONB,
@@ -22,8 +24,15 @@ CREATE TABLE IF NOT EXISTS roadmaps (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   started_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   generated_at     TIMESTAMPTZ,
-  UNIQUE (normalized_topic, goal)
+  UNIQUE (normalized_topic, goal, profile_key)
 );
+
+-- Upgrade databases created before learner profiles were added.
+ALTER TABLE roadmaps ADD COLUMN IF NOT EXISTS profile_key TEXT NOT NULL DEFAULT '{}';
+ALTER TABLE roadmaps ADD COLUMN IF NOT EXISTS learner_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE roadmaps DROP CONSTRAINT IF EXISTS roadmaps_normalized_topic_goal_key;
+CREATE UNIQUE INDEX IF NOT EXISTS roadmaps_topic_goal_profile_key
+  ON roadmaps (normalized_topic, goal, profile_key);
 
 -- Which user has which roadmap in "My roadmaps".
 CREATE TABLE IF NOT EXISTS user_roadmaps (

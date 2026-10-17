@@ -2,7 +2,10 @@
 // API layer. Flip USE_MOCK_DATA to false to talk to the real backend.
 // Every page imports from here only, so nothing else needs to change.
 // ─────────────────────────────────────────────────────────────
-export const USE_MOCK_DATA = false;
+// Keep the Vite development preview usable without the backend stack. Production
+// builds use the real API unless explicitly configured otherwise.
+export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
+  || (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_DATA !== 'false');
 const BASE_URL = import.meta.env.VITE_API_URL || ''; // '' = same origin (Vite proxy)
 
 export const GOALS = [
@@ -41,6 +44,7 @@ const real = {
   createRoadmap: (payload) => http('/api/roadmaps', { method: 'POST', body: payload }),
   getRoadmap: (id) => http(`/api/roadmaps/${id}`),
   getProgress: (id) => http(`/api/roadmaps/${id}/progress`),
+  removeRoadmap: (id) => http(`/api/me/roadmaps/${id}`, { method: 'DELETE' }),
   // ASSUMED endpoint – adjust to whatever your backend exposes for status changes.
   updateNodeStatus: (id, nodeId, status) =>
     http(`/api/roadmaps/${id}/progress/${nodeId}`, { method: 'PUT', body: { status } }),
@@ -129,7 +133,11 @@ function buildProgress(rm) {
 }
 
 // Mock store: { [id]: { topic, goal, createdAt } }. A seeded roadmap is always ready.
-const store = () => ({ rm_dsa_int_01: { topic: 'Data Structures and Algorithms', goal: 'intermediate', createdAt: 0 }, ...read('probsol_mock_rms', {}) });
+const store = () => {
+  const records = { rm_dsa_int_01: { topic: 'Data Structures and Algorithms', goal: 'intermediate', createdAt: 0 }, ...read('probsol_mock_rms', {}) };
+  const removed = read('probsol_mock_removed', {});
+  return Object.fromEntries(Object.entries(records).filter(([id]) => !removed[id]));
+};
 const mockStatus = (rec) => {
   const age = Date.now() - rec.createdAt;
   if (/fail/i.test(rec.topic) && age > 6000) return 'failed'; // type "fail" as the topic to test the error state
@@ -163,6 +171,13 @@ const mock = {
     const rm = await mock.getRoadmap(id);
     return buildProgress(rm);
   },
+  async removeRoadmap(id) {
+    if (!store()[id]) throw new Error('Roadmap not found in your roadmaps.');
+    write('probsol_mock_removed', { ...read('probsol_mock_removed', {}), [id]: true });
+    const progress = read('probsol_mock_progress', {});
+    delete progress[id];
+    write('probsol_mock_progress', progress);
+  },
   async updateNodeStatus(id, nodeId, status) {
     const all = read('probsol_mock_progress', {});
     all[id] = { ...all[id], [nodeId]: { status, updated_at: new Date().toISOString() } };
@@ -186,5 +201,6 @@ export const signup = (...a) => impl.signup(...a);
 export const createRoadmap = (p) => impl.createRoadmap(p);
 export const getRoadmap = (id) => impl.getRoadmap(id);
 export const getProgress = (id) => impl.getProgress(id);
+export const removeRoadmap = (id) => impl.removeRoadmap(id);
 export const updateNodeStatus = (id, nodeId, s) => impl.updateNodeStatus(id, nodeId, s);
 export const getMyRoadmaps = () => impl.getMyRoadmaps();
