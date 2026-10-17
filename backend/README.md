@@ -1,49 +1,87 @@
-# Backend (Express + Postgres)
+# Backend
 
-Handles users, roadmaps and progress tracking. It never generates roadmaps itself: it asks the `ai/` service and waits for a callback.
+The backend is a small Express API backed by PostgreSQL. It owns authentication, roadmap records, user-roadmap links, progress, and the callback used by the AI service. It does not generate content itself.
 
-## Setup
+## Run locally
 
 ```bash
 cd backend
-cp .env.example .env        # fill in DATABASE_URL, JWT_SECRET, INTERNAL_KEY
+cp .env.example .env
 npm install
-npm run migrate             # creates the tables (safe to re-run)
-npm run dev                 # http://localhost:4000
+npm run migrate
+npm run dev
 ```
 
-## Endpoints
+Set `DATABASE_URL`, `JWT_SECRET`, and `INTERNAL_KEY` in `.env`. For the local AI service, use:
 
-| Method | Path | Notes |
+```dotenv
+AI_URL=http://localhost:8000
+BACKEND_URL=http://localhost:4000
+CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
+```
+
+The API listens on `http://localhost:4000` by default. `npm run migrate` is safe to run again and also adds the learner-profile columns to an older database.
+
+## Roadmap request
+
+`POST /api/roadmaps` requires authentication. The request body is:
+
+```json
+{
+  "topic": "Python",
+  "goal": "job_ready",
+  "learner_profile": {
+    "experience": "some_experience",
+    "weekly_hours": 6,
+    "target": "Build a portfolio API"
+  }
+}
+```
+
+The goal must be `beginner`, `intermediate`, or `job_ready`. A ready cache hit returns the complete roadmap. A new request returns `202` with an id and status while generation runs.
+
+Roadmaps are cached by normalized topic, goal, and learner profile. This keeps equivalent requests efficient without giving every learner the same plan.
+
+## Public endpoints
+
+| Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/auth/signup`, `/api/auth/login` | return `{ token, user }` |
-| POST | `/api/roadmaps` | `{ topic, goal }`. Ready: full roadmap. Else `{ id, status }` |
-| GET | `/api/roadmaps/:id` | roadmap, or `status` + empty `stages` + `error` |
-| GET | `/api/roadmaps/:id/progress` | `{ roadmap_id, nodes, summary }` |
-| PUT | `/api/roadmaps/:id/progress/:nodeId` | `{ status }` -> `{ node_id, status, summary }` |
-| GET | `/api/me/roadmaps` | bare array for the dashboard |
-| POST | `/internal/roadmaps/:id/complete` and `/fail` | AI service only (`X-Internal-Key`) |
+| `POST` | `/api/auth/signup` | Create an account and return a token. |
+| `POST` | `/api/auth/login` | Sign in and return a token. |
+| `POST` | `/api/roadmaps` | Find or start a roadmap. |
+| `GET` | `/api/roadmaps/:id` | Read roadmap status or content. |
+| `GET` | `/api/roadmaps/:id/progress` | Read node and summary progress. |
+| `PUT` | `/api/roadmaps/:id/progress/:nodeId` | Set a node to `in_progress` or `completed`. |
+| `GET` | `/api/me/roadmaps` | List roadmaps linked to the signed-in user. |
+| `DELETE` | `/api/me/roadmaps/:id` | Remove a roadmap from the user's list. |
 
-Errors are always `{ "message": "..." }` with a proper status (400, 401, 404, 409, 429).
+Errors use the form `{ "message": "..." }` and normally return `400`, `401`, `404`, `409`, or `429`.
 
-## How generation works
+## Generation lifecycle
 
-1. `POST /api/roadmaps` normalizes the topic (lowercase, collapsed spaces) and checks the cache on `(topic, goal)`.
-2. Cache hit: the roadmap is linked to the user and returned. A previously `failed` one is regenerated.
-3. Miss: row created as `queued`, backend calls `POST {AI_URL}/generate`, status becomes `generating`.
-4. The AI service calls `/internal/.../complete` (or `/fail`). The backend assigns ids (`st_`, `nd_`, `res_`) and stores the result.
-5. A watcher marks anything stuck for `GENERATION_TIMEOUT_MIN` minutes as `failed`, so nobody waits forever.
-6. Users can start unlimited new generations; cache hits are still reused.
+1. The API normalizes the topic and learner profile, then checks PostgreSQL for a matching roadmap.
+2. A cache hit is linked to the current user and returned. Failed records may be queued again.
+3. For a miss, the backend creates a `queued` record and calls the AI service at `POST /generate`.
+4. The status changes to `generating` while the AI service searches and creates the roadmap.
+5. The AI service calls the internal `complete` or `fail` callback.
+6. The backend validates the callback, assigns stage, node, and resource ids, and stores the result.
+7. The watcher marks jobs older than `GENERATION_TIMEOUT_MIN` as failed.
 
-## Layout
+The internal callbacks require the shared `INTERNAL_KEY` and should not be exposed as public application endpoints.
 
-```
+## Roadmap content
+
+Topic nodes contain up to three validated resources. Project nodes contain no resource links but may include a deliverable, requirements, milestones, acceptance criteria, and stretch goals. The backend assigns ids and ordering rather than trusting ids from the AI service.
+
+## Source layout
+
+```text
 src/
   app.js, server.js, config.js, db.js, migrate.js, utils.js
-  routes/       auth, roadmaps, progress, me, internal   (HTTP only)
-  services/     roadmapService (cache, assembly, jobs), progressService (summary math), watcher
-  clients/      aiClient.js  (the only place that calls the AI service)
-  middleware/   auth (JWT + internal key), errorHandler
-  validators/   schemas.js   (zod: public input and AI output)
+  clients/      AI service client
+  middleware/   authentication and error handling
+  routes/       auth, roadmaps, progress, me, internal
+  services/     roadmap assembly, progress, and stale-job watcher
+  validators/   public and AI callback schemas
 sql/schema.sql
 ```
