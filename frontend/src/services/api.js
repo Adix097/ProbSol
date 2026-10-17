@@ -2,7 +2,10 @@
 // API layer. Flip USE_MOCK_DATA to false to talk to the real backend.
 // Every page imports from here only, so nothing else needs to change.
 // ─────────────────────────────────────────────────────────────
-export const USE_MOCK_DATA = false;
+// Keep the Vite development preview usable without the backend stack. Production
+// builds use the real API unless explicitly configured otherwise.
+export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
+  || (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_DATA !== 'false');
 const BASE_URL = import.meta.env.VITE_API_URL || ''; // '' = same origin (Vite proxy)
 
 export const GOALS = [

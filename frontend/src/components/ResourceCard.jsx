@@ -16,7 +16,7 @@ export default function ResourceCard({ resource }) {
   const duration = formatDuration(resource.duration_minutes);
   return (
     <a href={resource.url} target="_blank" rel="noopener noreferrer"
-       className="flex items-center gap-3 rounded-lg border border-ink/10 bg-white p-3 hover:border-brand">
+       className="flex min-w-0 items-center gap-3 rounded-xl border border-ink/10 bg-white/80 p-3 transition hover:-translate-y-0.5 hover:border-brand hover:shadow-sm">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand-dark">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
