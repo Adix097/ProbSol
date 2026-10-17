@@ -7,10 +7,10 @@ import ResourceCard from '../components/ResourceCard';
 
 const byOrder = (a, b) => a.order - b.order;
 const STAGE_THEMES = [
-  { accent: 'border-l-teal-500', badge: 'bg-teal-100 text-teal-800', dot: 'bg-teal-500', wash: 'from-teal-50/80' },
-  { accent: 'border-l-amber-500', badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500', wash: 'from-amber-50/80' },
-  { accent: 'border-l-indigo-500', badge: 'bg-indigo-100 text-indigo-800', dot: 'bg-indigo-500', wash: 'from-indigo-50/80' },
-  { accent: 'border-l-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800', dot: 'bg-fuchsia-500', wash: 'from-fuchsia-50/80' },
+  { accent: 'border-l-teal-500', badge: 'bg-teal-100 text-teal-800', dot: 'bg-teal-500', wash: 'from-teal-50/80', node: 'border-l-teal-300' },
+  { accent: 'border-l-amber-500', badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500', wash: 'from-amber-50/80', node: 'border-l-amber-300' },
+  { accent: 'border-l-indigo-500', badge: 'bg-indigo-100 text-indigo-800', dot: 'bg-indigo-500', wash: 'from-indigo-50/80', node: 'border-l-indigo-300' },
+  { accent: 'border-l-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800', dot: 'bg-fuchsia-500', wash: 'from-fuchsia-50/80', node: 'border-l-fuchsia-300' },
 ];
 
 export default function RoadmapPage() {
@@ -168,7 +168,7 @@ export default function RoadmapPage() {
           return (
             <section id={`stage-${stage.id}`} key={stage.id} className={`animate-roadmap-in overflow-hidden rounded-2xl border border-l-4 border-white/80 bg-gradient-to-br ${theme.wash} to-white/80 shadow-sm ${theme.accent}`} style={{ animationDelay: `${stage.order * 90}ms` }}>
               <button onClick={() => setCollapsed((c) => ({ ...c, [stage.id]: open }))} aria-expanded={open}
-                      className="flex w-full items-start gap-3 p-5 text-left transition hover:bg-brand-soft/25 sm:p-6">
+                      className={`group flex w-full items-start gap-3 p-5 text-left transition duration-500 sm:p-6 ${open ? 'bg-white/35' : 'hover:bg-white/45'}`}>
                 <span className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${theme.badge}`}>{String(stageIndex + 1).padStart(2, '0')}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2 text-xl font-bold"><span>{stage.title}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${theme.badge}`}>{sp?.percent || 0}%</span></span>
@@ -180,13 +180,15 @@ export default function RoadmapPage() {
                     </span>
                   )}
                 </span>
-                <ChevronDown className={`mt-1 h-5 w-5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+                <span className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition duration-500 ${open ? `${theme.badge} rotate-180` : 'bg-white/70 group-hover:bg-white'}`}>
+                  <ChevronDown className="h-4 w-4" aria-hidden />
+                </span>
               </button>
 
-              {open && (
+              <div className={`roadmap-panel ${open ? 'is-open' : ''}`}>
                 <ol className="relative space-y-4 border-t border-ink/10 p-5 before:absolute before:bottom-8 before:left-[1.65rem] before:top-8 before:w-px before:bg-brand/20 sm:p-6">
                   {[...stage.nodes].sort(byOrder).map((node) => (
-                    <li key={node.id} id={`node-${node.id}`} className="relative scroll-mt-24 rounded-2xl border border-ink/10 bg-white/80 p-4 transition hover:border-brand/25 hover:shadow-sm sm:p-5">
+                    <li key={node.id} id={`node-${node.id}`} className={`relative scroll-mt-24 rounded-2xl border border-l-4 border-ink/10 bg-white/80 p-4 transition duration-500 hover:-translate-y-0.5 hover:border-brand/25 hover:shadow-md sm:p-5 ${theme.node}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <h3 className="flex min-w-0 items-center gap-2 break-words font-bold">
                           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[10px] font-bold text-brand-dark">{node.order}</span>
@@ -222,7 +224,7 @@ export default function RoadmapPage() {
                     </li>
                   ))}
                 </ol>
-              )}
+              </div>
             </section>
           );
         })}
