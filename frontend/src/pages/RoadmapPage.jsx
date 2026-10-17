@@ -146,6 +146,16 @@ export default function RoadmapPage() {
                       </div>
                       <p className="mt-1 text-ink/70">{node.description}</p>
 
+                      {node.project && (
+                        <div className="mt-4 space-y-3 rounded-md bg-brand-soft/40 p-4 text-sm">
+                          {node.project.deliverable && <p><strong>Deliverable:</strong> {node.project.deliverable}</p>}
+                          {node.project.requirements?.length > 0 && <div><strong>Requirements</strong><ul className="mt-1 list-disc space-y-1 pl-5">{node.project.requirements.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+                          {node.project.milestones?.length > 0 && <div><strong>Milestones</strong><ol className="mt-1 list-decimal space-y-1 pl-5">{node.project.milestones.map((item) => <li key={item}>{item}</li>)}</ol></div>}
+                          {node.project.acceptance_criteria?.length > 0 && <div><strong>Done when</strong><ul className="mt-1 list-disc space-y-1 pl-5">{node.project.acceptance_criteria.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+                          {node.project.stretch_goals?.length > 0 && <div><strong>Stretch goals</strong><ul className="mt-1 list-disc space-y-1 pl-5">{node.project.stretch_goals.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+                        </div>
+                      )}
+
                       {node.limited_resources && (
                         <p className="mt-3 flex items-center gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-900">
                           <AlertCircle className="h-4 w-4 shrink-0" aria-hidden /> Few quality resources found for this topic.

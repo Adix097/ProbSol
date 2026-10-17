@@ -1,7 +1,7 @@
 import { query } from '../db.js';
 import { config } from '../config.js';
 import { requestGeneration } from '../clients/aiClient.js';
-import { HttpError, newRoadmapId, normalizeTopic } from '../utils.js';
+import { HttpError, learnerProfileKey, newRoadmapId, normalizeLearnerProfile, normalizeTopic } from '../utils.js';
 
 export async function getRoadmapRow(id) {
   const { rows } = await query('SELECT * FROM roadmaps WHERE id = $1', [id]);
@@ -30,7 +30,7 @@ async function startGeneration(row, userId) {
     [userId, row.id],
   );
   try {
-    await requestGeneration({ roadmapId: row.id, topic: row.topic, goal: row.goal });
+    await requestGeneration({ roadmapId: row.id, topic: row.topic, goal: row.goal, learnerProfile: row.learner_profile });
     // The AI service may already have finished; only move queued -> generating.
     await query(`UPDATE roadmaps SET status = 'generating' WHERE id = $1 AND status = 'queued'`, [row.id]);
   } catch (err) {
@@ -43,10 +43,12 @@ async function startGeneration(row, userId) {
 
 // Cache hit -> return the existing roadmap. Miss (or previous failure) -> start generation.
 // Always links the roadmap to the user so it shows up in "My roadmaps".
-export async function findOrStartRoadmap({ user, topic, goal }) {
+export async function findOrStartRoadmap({ user, topic, goal, learnerProfile }) {
   const normalized = normalizeTopic(topic);
+  const normalizedProfile = normalizeLearnerProfile(learnerProfile);
+  const profileKey = learnerProfileKey(normalizedProfile);
   const find = () =>
-    query('SELECT * FROM roadmaps WHERE normalized_topic = $1 AND goal = $2', [normalized, goal]).then((r) => r.rows[0]);
+    query('SELECT * FROM roadmaps WHERE normalized_topic = $1 AND goal = $2 AND profile_key = $3', [normalized, goal, profileKey]).then((r) => r.rows[0]);
 
   let row = await find();
   let startNew = false;
@@ -54,10 +56,10 @@ export async function findOrStartRoadmap({ user, topic, goal }) {
   if (!row || row.status === 'failed') {
     if (!row) {
       const ins = await query(
-        `INSERT INTO roadmaps (id, normalized_topic, topic, goal, status)
-         VALUES ($1, $2, $3, $4, 'queued')
-         ON CONFLICT (normalized_topic, goal) DO NOTHING RETURNING *`,
-        [newRoadmapId(), normalized, topic, goal],
+        `INSERT INTO roadmaps (id, normalized_topic, topic, goal, profile_key, learner_profile, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'queued')
+         ON CONFLICT (normalized_topic, goal, profile_key) DO NOTHING RETURNING *`,
+        [newRoadmapId(), normalized, topic, goal, profileKey, JSON.stringify(normalizedProfile)],
       );
       if (ins.rows[0]) { row = ins.rows[0]; startNew = true; } else { row = await find(); }
     } else {
@@ -109,6 +111,7 @@ export function assembleContent(data) {
           type: r.type,
           duration_minutes: r.duration_minutes,
         })),
+        project: n.project || null,
       };
     }),
   }));

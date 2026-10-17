@@ -16,6 +16,9 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [topic, setTopic] = useState('');
   const [goal, setGoal] = useState('');
+  const [experience, setExperience] = useState('beginner');
+  const [weeklyHours, setWeeklyHours] = useState(5);
+  const [target, setTarget] = useState('');
   const [touched, setTouched] = useState({ topic: false, goal: false });
   const [busy, setBusy] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -27,7 +30,11 @@ export default function HomePage() {
   async function onSubmit(e) {
     e.preventDefault();
     if (!valid || busy) return;
-    const payload = { topic: topic.trim(), goal };
+    const payload = {
+      topic: topic.trim(),
+      goal,
+      learner_profile: { experience, weekly_hours: Number(weeklyHours), target: target.trim() },
+    };
     // Logged out: remember what they asked for, resume after login.
     if (!user) {
       localStorage.setItem('probsol_intent', JSON.stringify(payload));
@@ -57,6 +64,31 @@ export default function HomePage() {
                  aria-invalid={touched.topic && !!topicError} aria-describedby="topic-err"
                  className="mt-2 w-full rounded-md border border-ink/20 bg-white px-4 py-3 text-lg focus:border-brand" />
           <p id="topic-err" className="mt-1 min-h-5 text-sm text-red-700">{touched.topic ? topicError : ''}</p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="experience" className="block font-medium">Current experience</label>
+            <select id="experience" value={experience} onChange={(e) => setExperience(e.target.value)}
+                    className="mt-2 w-full rounded-md border border-ink/20 bg-white px-4 py-3">
+              <option value="beginner">Starting from zero</option>
+              <option value="some_experience">Some experience</option>
+              <option value="advanced">Already advanced</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="weekly-hours" className="block font-medium">Hours per week</label>
+            <input id="weekly-hours" type="number" min="1" max="40" value={weeklyHours}
+                   onChange={(e) => setWeeklyHours(e.target.value)}
+                   className="mt-2 w-full rounded-md border border-ink/20 bg-white px-4 py-3" />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="target" className="block font-medium">What should this help you do?</label>
+          <input id="target" value={target} maxLength={160} onChange={(e) => setTarget(e.target.value)}
+                 placeholder="e.g. Build a portfolio app or pass technical interviews"
+                 className="mt-2 w-full rounded-md border border-ink/20 bg-white px-4 py-3" />
         </div>
 
         <div>
