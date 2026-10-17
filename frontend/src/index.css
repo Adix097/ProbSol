@@ -3,6 +3,33 @@
 @tailwind utilities;
 
 html { scroll-behavior: smooth; }
-body { @apply bg-[#F4F6F5] text-ink antialiased; }
+body {
+  @apply bg-[#eef4f0] text-ink antialiased;
+  background-image: radial-gradient(circle at 10% 0%, rgba(204, 251, 241, .6), transparent 28rem),
+    radial-gradient(circle at 90% 10%, rgba(220, 252, 231, .65), transparent 24rem),
+    repeating-linear-gradient(135deg, rgba(15, 118, 110, .018) 0, rgba(15, 118, 110, .018) 1px, transparent 1px, transparent 10px);
+}
 :focus-visible { outline: 2px solid #0F766E; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; } }
+
+@keyframes float-gently {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+@keyframes shimmer {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(110%); }
+}
+@keyframes roadmap-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, .18); }
+  50% { box-shadow: 0 0 0 8px rgba(15, 118, 110, 0); }
+}
+.animate-float-gently { animation: float-gently 5s ease-in-out infinite; }
+.animate-roadmap-in { animation: roadmap-in .55s ease-out both; }
+.animate-pulse-soft { animation: pulse-soft 2.8s ease-in-out infinite; }
+.surface-glass { @apply border border-white/70 bg-white/75 shadow-[0_18px_50px_rgba(22,32,46,.07)] backdrop-blur; }
+.text-balance { text-wrap: balance; }
